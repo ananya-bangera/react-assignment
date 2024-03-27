@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Dropdown } from 'react-native-element-dropdown';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-export default function AllShiftsScreen({shifts, setShifts}) {
-    
+export default function AllShiftsScreen({ shifts, setShifts }) {
+
     const [allshifts, setAllShifts] = useState();
     const [categories, setCategories] = useState([]);
     const [data, setdata] = useState([
@@ -27,15 +27,29 @@ export default function AllShiftsScreen({shifts, setShifts}) {
         console.log(id);
 
         axios.get(`http://192.168.1.4:8082/shifts/${id}/cancel`).then(response => response.data
-        ).then(data => setShifts(shifts.map((shift) => {
-            if (shift.id === id) {
-                return { ...shift, booked: false }
-            }
-            else if (data.endTime > shift.startTime && data.startTime < shift.endTime) {
-                return { ...shift, notPossible: false }
-            }
-            else return shift
-        }))).catch((error) => console.error(error))
+        )
+            .then(data => {
+                setShifts(shifts.map((shift) => {
+                    console.log(data);
+                    if (shift.id === id) {
+                        return { ...shift, booked: false }
+                    }
+                    else if (data.endTime > shift.startTime && data.startTime < shift.endTime) {
+                        return { ...shift, notPossible: false }
+                    }
+                    else return shift
+                })); return data
+            })
+            .then(data => setAllShifts(allshifts.map((shift) => {
+                console.log(data);
+                if (shift.id === id) {
+                    return { ...shift, booked: false }
+                }
+                else if (data.endTime > shift.startTime && data.startTime < shift.endTime) {
+                    return { ...shift, notPossible: false }
+                }
+                else return shift
+            }))).catch((error) => console.error(error))
 
     }
 
@@ -45,14 +59,14 @@ export default function AllShiftsScreen({shifts, setShifts}) {
             .then(response => response.data)
 
             .then((json) => {
-                setShifts(json.filter(shift => shift.booked).map((shift) => ({
+                setShifts(json.map((shift) => ({
                     ...shift,
                     notPossible: false,
                     startDate: new Date(shift.startTime),
                     endDate: new Date(shift.endTime),
 
                 })));
-                setAllShifts(json.filter(shift => shift.booked).map((shift) => ({
+                setAllShifts(json.map((shift) => ({
                     ...shift,
                     notPossible: false,
                     startDate: new Date(shift.startTime),
@@ -105,6 +119,7 @@ export default function AllShiftsScreen({shifts, setShifts}) {
     }, [])
 
     const [value, setValue] = useState(null);
+    const [name, setName] = useState(null);
     const [isFocus, setIsFocus] = useState(false);
 
     const renderLabel = () => {
@@ -146,8 +161,10 @@ export default function AllShiftsScreen({shifts, setShifts}) {
                         onBlur={() => setIsFocus(false)}
                         onChange={item => {
                             setValue(item.label);
+                            setName(item.name);
                             setIsFocus(false);
-                            setShifts(allshifts.filter(shift => shift.area === item.name));
+                            console.log(item);
+                            // setShifts(allshifts.filter(shift => shift.area === item.name));
 
                         }}
                         renderLeftIcon={() => (
@@ -190,7 +207,7 @@ export default function AllShiftsScreen({shifts, setShifts}) {
                                     const options = { month: 'long', day: 'numeric' };
                                     const formattedDate = start.toLocaleDateString('en-US', options);
 
-                                    return formattedDate == category && shift.booked
+                                    return formattedDate == category && shift.booked && shift.area == name
                                 }).map((shift) => {
                                     return (
                                         <View
@@ -206,9 +223,11 @@ export default function AllShiftsScreen({shifts, setShifts}) {
                                             {shift.booked ? <Text style={{ ...styles.cellStatus, marginRight: 18, color: '#4F6C92' }}>Booked </Text> : shift.notPossible ? <Text style={{ ...styles.cellStatus, color: '#E2006A' }}>Overlapping</Text> : <Text style={styles.cellStatus}>                         </Text>}
 
                                             {shift.booked ?
-                                                <Pressable style={{ ...styles.button, borderColor: '#E2006A', }} onPress={() => cancelShift(shift.id)}>
+                                                ((shift.startTime < start1) ? <Pressable disabled style={{ ...styles.button, borderColor: '#E2006A', }} onPress={() => cancelShift(shift.id)}>
+                                                    <Text style={{ ...styles.text, color: '#A4B8D3', }}>Cancel</Text>
+                                                </Pressable> : <Pressable style={{ ...styles.button, borderColor: '#E2006A', }} onPress={() => cancelShift(shift.id)}>
                                                     <Text style={{ ...styles.text, color: '#E2006A', }}>Cancel</Text>
-                                                </Pressable> :
+                                                </Pressable>) :
                                                 ((shift.startTime < start1 || shift.notPossible) ? <Pressable disabled style={{ ...styles.button, borderColor: '#A4B8D3' }} onPress={() => bookShift(shift.id)}>
                                                     <Text style={{ ...styles.text, color: '#A4B8D3', }} >Book</Text>
                                                 </Pressable> : <Pressable style={{ ...styles.button, borderColor: '#16A64D' }} onPress={() => bookShift(shift.id)}>
