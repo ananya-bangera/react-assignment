@@ -20,6 +20,7 @@ const routes = [
     method: 'GET',
     path: '/{id}',
     handler: async ({ params }) => {
+      console.log("params.id", params.id);
       const shift = await db.shifts.get(params.id);
       await delay(200);
 
@@ -38,11 +39,12 @@ const routes = [
     },
   },
   {
-    method: 'POST',
+    method: 'GET',
     path: '/{id}/book',
     handler: async ({ params }) => {
+      console.log("params.id", params.id);
       const shift = await db.shifts.get(params.id);
-
+    
       if (!shift) {
         throw Boom.notFound(`Shift not found with id ${params.id}`);
       } else if (shift.booked) {
@@ -76,7 +78,7 @@ const routes = [
     },
   },
   {
-    method: 'POST',
+    method: 'GET',
     path: '/{id}/cancel',
     handler: async ({ params }) => {
       const shift = await db.shifts.get(params.id);

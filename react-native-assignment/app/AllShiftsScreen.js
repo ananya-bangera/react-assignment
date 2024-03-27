@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Button, Pressable, ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
@@ -15,16 +15,27 @@ export default function AllShiftsScreen() {
         { label: 'Tampere', value: 0 },
     ]);
     let items = [];
+    const start1 = new Date(Date.now());
+    const options1 = { month: 'long', day: 'numeric' };
+    const today = start1.toLocaleDateString('en-US', options1)
+    const yesterdayst = new Date(Date.now() - 86400000);
+    const yesterday = yesterdayst.toLocaleDateString('en-US', options1);
+
+    const bookShift = (id) => {
+        console.log(id);
+        axios.get(`http://192.168.1.4:8082/shifts/${id}/book`).then(response => {
+            console.log(response.data)
+        }).then(() => setShifts(shifts.map((shift)=>{
+            if(shift.id===id){
+                return {...shift, booked:true}
+            }
+            else return shift
+        }))).catch((error) => console.error(error))
+
+    }
 
     const getShiftData = () => {
-        // axios({
-        //     method: 'get',
-        //     url: 'http://0.0.0.0:8082/shifts',
-        //     headers: { 
-        //       'Content-Type': 'application/json'
-        //     },
 
-        // })
         axios.get('http://192.168.1.4:8082/shifts')
             .then(response => response.data)
 
@@ -143,11 +154,11 @@ export default function AllShiftsScreen() {
             {/* <Text>Integrating APIs</Text> */}
             {/* <Ionicons name="calendar" size={24} color="black" /> */}
 
-            <ScrollView>
+            <ScrollView style={{ color: '#A4B8D3' }}>
                 <View style={styles.container}>
                     {/* {renderLabel()} */}
                     <Dropdown
-                        style={[styles.dropdown, isFocus && { borderColor: 'blue' }]}
+                        style={[styles.dropdown, isFocus && { borderColor: '#F7F8FB' }]}
                         placeholderStyle={styles.placeholderStyle}
                         selectedTextStyle={styles.selectedTextStyle}
                         inputSearchStyle={styles.inputSearchStyle}
@@ -157,7 +168,7 @@ export default function AllShiftsScreen() {
                         maxHeight={300}
                         labelField="label"
                         valueField="label"
-                        placeholder={!isFocus ? 'Select item' : '...'}
+                        placeholder={!isFocus ? 'Select Area' : '...'}
                         searchPlaceholder="Search..."
                         value={value}
                         onFocus={() => setIsFocus(true)}
@@ -171,7 +182,7 @@ export default function AllShiftsScreen() {
                         renderLeftIcon={() => (
                             <FontAwesome
                                 style={styles.icon}
-                                color={isFocus ? 'blue' : 'black'}
+                                color={isFocus ? '#4F6C92' : '#4F6C92'}
                                 name="map-marker"
                                 size={20}
                             />
@@ -182,18 +193,58 @@ export default function AllShiftsScreen() {
                     !!categories.length && categories.map((category) => {
                         return (
                             <View style={styles.todo}>
-                                <Text>{category}</Text>
+                                <View
+                                    style={{
+                                        flexDirection: 'row',
+                                        padding: 20,
+                                        backgroundColor: '#F1F4F8',
+                                        borderBlockColor: "red",
+                                        // borderColor: "black"
+                                        borderColor: "#CBD2E1"
+                                    }}>
+                                    <Text
+                                        style={{
+                                            fontSize: 16,
+                                            fontWeight: 'bold',
+                                            color: '#4F6C92',
+                                            letterSpacing: 0.5,
+                                            marginLeft: 10,
+                                            marginRight: 10
+
+                                        }}
+                                    >{(category == today) ? "Today" : (category == yesterday ? "Yesterday" : category)}</Text>
+                                </View>
                                 {!!shifts?.length && shifts?.filter(shift => {
                                     const start = new Date(shift.startTime);
                                     const options = { month: 'long', day: 'numeric' };
                                     const formattedDate = start.toLocaleDateString('en-US', options);
+
                                     return formattedDate == category
                                 }).map((shift) => {
                                     return (
-                                        <View style={styles.todo}>
-                                            <View >
-                                                <Text>{shift?.area}</Text>
-                                            </View>
+                                        <View
+                                            style={styles.cell}>
+                                            {/* <View style={{ flex: 0.4 }}> */}
+                                            <Text style={styles.cellTime}>
+                                                {(shift.startDate.getHours() < 10 ? '0' : '') + shift.startDate.getHours().toString()}:{(shift.startDate.getMinutes() < 10 ? '0' : '') + shift.startDate.getMinutes().toString() + ' '}
+                                                -
+                                                {' ' + (shift.endDate.getHours() < 10 ? '0' : '') + shift.endDate.getHours().toString()}:{(shift.endDate.getMinutes() < 10 ? '0' : '') + shift.endDate.getMinutes().toString()}
+
+                                            </Text>
+                                            <Text style={styles.cellStatus}>
+                                                {shift.booked ? 'Booked' : 'Available'}
+                                            </Text>
+                                            {shift.booked ?
+                                                <Pressable style={styles.button} onPress={() => console.log("yo")}>
+                                                    <Text style={styles.text}>Cancel</Text>
+                                                </Pressable> :
+                                                <Pressable style={styles.button} onPress={() => bookShift(shift.id)}>
+                                                    <Text style={styles.text}>Book</Text>
+                                                </Pressable>}
+
+
+                                            {/* </View> */}
+
                                         </View>
                                     )
                                 })}
@@ -229,6 +280,56 @@ export default function AllShiftsScreen() {
 }
 
 const styles = StyleSheet.create({
+    cell: {
+        flexDirection: 'row',
+        borderWidth: 1,
+        paddingVertical: 20,
+        paddingHorizontal: 10,
+        backgroundColor: '#F7F8FB',
+        borderColor: "#CBD2E1"
+    },
+    cellTime:
+    {
+        fontSize: 16,
+        marginTop: 5,
+        color: '#4F6C92',
+        letterSpacing: 0.2,
+        marginLeft: 5,
+        marginRight: 10
+    }
+    ,
+    cellStatus: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#4F6C92',
+        letterSpacing: 0.5,
+        marginLeft: 10,
+        marginRight: 10,
+        marginTop: 5
+
+    },
+    button: {
+        alignItems: 'center',
+        marginLeft: 30,
+        justifyContent: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 32,
+        borderRadius: 20,
+        borderWidth: 0.5,
+        borderColor: '#16A64D',
+        elevation: 2,
+        backgroundColor: '#F7F8FB',
+    },
+    buttonOnPress: {
+
+    },
+    text: {
+        fontSize: 16,
+        lineHeight: 21,
+        fontWeight: 'bold',
+        letterSpacing: 0.25,
+        color: '#16A64D',
+    },
     icon: {
         marginRight: 15,
         marginLeft: 15
@@ -244,9 +345,18 @@ const styles = StyleSheet.create({
     },
     placeholderStyle: {
         fontSize: 16,
+        marginTop: 5,
+        color: '#4F6C92',
+        letterSpacing: 0.2,
+        marginLeft: 5,
+        marginRight: 10
+    },
+    dropdown: {
+        backgroundColor: '#F7F8FB'
     },
     selectedTextStyle: {
         fontSize: 16,
+        color: '#4F6C92'
     },
     iconStyle: {
         width: 20,
@@ -255,9 +365,12 @@ const styles = StyleSheet.create({
     inputSearchStyle: {
         height: 40,
         fontSize: 16,
+        backgroundColor: '#F7F8FB'
     },
     container: {
-        marginTop: 50,
+        marginTop: 10,
+        color: '#F7F8FB',
+        backgroundColor: '#F7F8FB'
     },
     bigBlue: {
         color: 'blue',
