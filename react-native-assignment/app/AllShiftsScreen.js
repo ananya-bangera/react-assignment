@@ -1,12 +1,12 @@
 import { StatusBar } from 'expo-status-bar';
-import { Button, Pressable, ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Button, Pressable, ScrollView, SectionList, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Dropdown } from 'react-native-element-dropdown';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-export default function AllShiftsScreen() {
-    const [shifts, setShifts] = useState();
+export default function AllShiftsScreen({shifts, setShifts}) {
+    
     const [allshifts, setAllShifts] = useState();
     const [categories, setCategories] = useState([]);
     const [data, setdata] = useState([
@@ -21,13 +21,36 @@ export default function AllShiftsScreen() {
     const yesterdayst = new Date(Date.now() - 86400000);
     const yesterday = yesterdayst.toLocaleDateString('en-US', options1);
 
+    console.log("init");
+
     const bookShift = (id) => {
         console.log(id);
-        axios.get(`http://192.168.1.4:8082/shifts/${id}/book`).then(response => {
-            console.log(response.data)
-        }).then(() => setShifts(shifts.map((shift)=>{
-            if(shift.id===id){
-                return {...shift, booked:true}
+
+        axios.get(`http://192.168.1.4:8082/shifts/${id}/book`).then(response => response.data
+        ).then(data => setShifts(shifts.map((shift) => {
+            console.log(data);
+            if (shift.id === id) {
+                return { ...shift, booked: true }
+            }
+            else if (data.endTime > shift.startTime && data.startTime < shift.endTime) {
+                return { ...shift, notPossible: true }
+            }
+            else return shift
+        }))).catch((error) => console.error(error))
+
+
+
+    }
+    const cancelShift = (id) => {
+        console.log(id);
+
+        axios.get(`http://192.168.1.4:8082/shifts/${id}/cancel`).then(response => response.data
+        ).then(data => setShifts(shifts.map((shift) => {
+            if (shift.id === id) {
+                return { ...shift, booked: false }
+            }
+            else if (data.endTime > shift.startTime && data.startTime < shift.endTime) {
+                return { ...shift, notPossible: false }
             }
             else return shift
         }))).catch((error) => console.error(error))
@@ -42,12 +65,14 @@ export default function AllShiftsScreen() {
             .then((json) => {
                 setShifts(json.map((shift) => ({
                     ...shift,
+                    notPossible: false,
                     startDate: new Date(shift.startTime),
                     endDate: new Date(shift.endTime),
 
                 })));
                 setAllShifts(json.map((shift) => ({
                     ...shift,
+                    notPossible: false,
                     startDate: new Date(shift.startTime),
                     endDate: new Date(shift.endTime),
 
@@ -61,45 +86,8 @@ export default function AllShiftsScreen() {
                         const formattedDate = start.toLocaleDateString('en-US', options);
                         return formattedDate
                     }))));
-                // setSections(categories.map((category) => ({ startTime: category, data: [] })))
-                // console.log(sections)
-                // setSections(json.map((shift) => {
-                //     const start = new Date(shift.startTime);
 
-                //     // Using toLocaleDateString() with options
-                //     const options = { month: 'long', day: 'numeric' };
-                //     const formattedDate = start.toLocaleDateString('en-US', options);
-
-                //     if (sections.findIndex(item => item.startDate === formattedDate) === -1) {
-                //         return {
-                //             startDate: formattedDate,
-                //             data: [shift.toString()],
-                //         }
-                //     }
-                //     else {
-                //         return { data: [...sections[sections.findIndex(item => item.startDate === formattedDate)].data, shift.toString()] }
-                //     }
-
-                // }));
                 items = json;
-                // console.log(json.map((shift) => {
-                //     const start = new Date(shift.startTime);
-
-                //     // Using toLocaleDateString() with options
-                //     const options = { month: 'long', day: 'numeric' };
-                //     const formattedDate = start.toLocaleDateString('en-US', options);
-
-                //     if (sections.findIndex(item => item.startDate === formattedDate) === -1) {
-                //         return {
-                //             startDate: formattedDate,
-                //             data: [shift.toString()],
-                //         }
-                //     }
-                //     else {
-                //         return { data: [...sections[sections.findIndex(item => item.startDate === formattedDate)].data, shift.toString()] }
-                //     }
-
-                // }));
             })
             .then(() => {
                 const areaCounts = items.reduce((counts, shift) => {
@@ -150,6 +138,7 @@ export default function AllShiftsScreen() {
 
 
     return (
+
         <View style={styles.container}>
             {/* <Text>Integrating APIs</Text> */}
             {/* <Ionicons name="calendar" size={24} color="black" /> */}
@@ -231,20 +220,18 @@ export default function AllShiftsScreen() {
                                                 {' ' + (shift.endDate.getHours() < 10 ? '0' : '') + shift.endDate.getHours().toString()}:{(shift.endDate.getMinutes() < 10 ? '0' : '') + shift.endDate.getMinutes().toString()}
 
                                             </Text>
-                                            <Text style={styles.cellStatus}>
-                                                {shift.booked ? 'Booked' : 'Available'}
-                                            </Text>
+
+                                            {shift.booked ? <Text style={{...styles.cellStatus, marginRight: 18, color: '#4F6C92'}}>Booked </Text> : shift.notPossible ? <Text style={{...styles.cellStatus,  color: '#E2006A'}}>Overlapping</Text> : <Text style={styles.cellStatus}>                         </Text>}
+
                                             {shift.booked ?
-                                                <Pressable style={styles.button} onPress={() => console.log("yo")}>
-                                                    <Text style={styles.text}>Cancel</Text>
+                                                <Pressable style={{ ...styles.button, borderColor: '#E2006A', }} onPress={() => cancelShift(shift.id)}>
+                                                    <Text style={{ ...styles.text, color: '#E2006A', }}>Cancel</Text>
                                                 </Pressable> :
-                                                <Pressable style={styles.button} onPress={() => bookShift(shift.id)}>
-                                                    <Text style={styles.text}>Book</Text>
-                                                </Pressable>}
-
-
-                                            {/* </View> */}
-
+                                                ((shift.startTime < start1 || shift.notPossible) ? <Pressable disabled style={{ ...styles.button, borderColor: '#A4B8D3' }} onPress={() => bookShift(shift.id)}>
+                                                    <Text style={{ ...styles.text, color: '#A4B8D3', }} >Book</Text>
+                                                </Pressable> : <Pressable style={{ ...styles.button, borderColor: '#16A64D' }} onPress={() => bookShift(shift.id)}>
+                                                    <Text style={{ ...styles.text, color: '#16A64D', }} >Book</Text>
+                                                </Pressable>)}
                                         </View>
                                     )
                                 })}
@@ -301,10 +288,10 @@ const styles = StyleSheet.create({
     cellStatus: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#4F6C92',
-        letterSpacing: 0.5,
+       
+        // letterSpacing: 0.5,
         marginLeft: 10,
-        marginRight: 10,
+        // marginRight: 10,
         marginTop: 5
 
     },
@@ -316,9 +303,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 32,
         borderRadius: 20,
         borderWidth: 0.5,
-        borderColor: '#16A64D',
-        elevation: 2,
         backgroundColor: '#F7F8FB',
+
+        elevation: 2,
+
     },
     buttonOnPress: {
 
@@ -328,7 +316,7 @@ const styles = StyleSheet.create({
         lineHeight: 21,
         fontWeight: 'bold',
         letterSpacing: 0.25,
-        color: '#16A64D',
+
     },
     icon: {
         marginRight: 15,

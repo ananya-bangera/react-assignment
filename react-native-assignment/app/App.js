@@ -5,10 +5,12 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MyShiftsScreen from './MyShiftsScreen';
 import AllShiftsScreen from './AllShiftsScreen';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useState } from 'react';
 
 export default function App() {
 
   const Tab = createBottomTabNavigator();
+  const [shifts, setShifts] = useState();
   return (
     <NavigationContainer>
       <Tab.Navigator screenOptions={({ route }) => ({
@@ -17,10 +19,10 @@ export default function App() {
 
           if (route.name === 'My Shifts') {
             iconName = focused
-            ? 'person'
-            : 'person-outline';
+              ? 'person'
+              : 'person-outline';
           } else if (route.name === 'Available Shifts') {
-            iconName = focused 
+            iconName = focused
               ? 'calendar'
               : 'calendar-outline';
           }
@@ -31,8 +33,8 @@ export default function App() {
         tabBarActiveTintColor: '#004FB4',
         tabBarInactiveTintColor: '#A4B8D3',
       })}>
-        <Tab.Screen name="My Shifts" component={MyShiftsScreen} />
-        <Tab.Screen name="Available Shifts" component={AllShiftsScreen} />
+        <Tab.Screen name="My Shifts"   children={()=><MyShiftsScreen shifts={shifts} setShifts={setShifts}/>} />
+        <Tab.Screen name="Available Shifts" children={()=><AllShiftsScreen shifts={shifts} setShifts={setShifts}/>}/>
       </Tab.Navigator>
     </NavigationContainer>
   );
