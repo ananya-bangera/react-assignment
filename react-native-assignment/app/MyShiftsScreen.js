@@ -49,7 +49,7 @@ export default function AllShiftsScreen({ shifts, setShifts }) {
                     return { ...shift, notPossible: false }
                 }
                 else return shift
-            }))).catch((error) => console.error(error))
+            }))).then(() => { setloading(-1) }).catch((error) => { console.error(error); setloading(-1) })
 
     }
 
@@ -121,6 +121,7 @@ export default function AllShiftsScreen({ shifts, setShifts }) {
     const [value, setValue] = useState(null);
     const [name, setName] = useState(null);
     const [isFocus, setIsFocus] = useState(false);
+    const [loading, setloading] = useState(-1)
 
     const renderLabel = () => {
         if (value || isFocus) {
@@ -155,6 +156,7 @@ export default function AllShiftsScreen({ shifts, setShifts }) {
                         labelField="label"
                         valueField="label"
                         placeholder={!isFocus ? 'Select Area' : '...'}
+                        
                         searchPlaceholder="Search..."
                         value={value}
                         onFocus={() => setIsFocus(true)}
@@ -211,6 +213,7 @@ export default function AllShiftsScreen({ shifts, setShifts }) {
                                 }).map((shift) => {
                                     return (
                                         <View
+                                            key={shift.id}
                                             style={styles.cell}>
                                             {/* <View style={{ flex: 0.4 }}> */}
                                             <Text style={styles.cellTime}>
@@ -223,15 +226,17 @@ export default function AllShiftsScreen({ shifts, setShifts }) {
                                             {shift.booked ? <Text style={{ ...styles.cellStatus, marginRight: 18, color: '#4F6C92' }}>Booked </Text> : shift.notPossible ? <Text style={{ ...styles.cellStatus, color: '#E2006A' }}>Overlapping</Text> : <Text style={styles.cellStatus}>                         </Text>}
 
                                             {shift.booked ?
-                                                ((shift.startTime < start1) ? <Pressable disabled style={{ ...styles.button, borderColor: '#E2006A', }} onPress={() => cancelShift(shift.id)}>
-                                                    <Text style={{ ...styles.text, color: '#A4B8D3', }}>Cancel</Text>
-                                                </Pressable> : <Pressable style={{ ...styles.button, borderColor: '#E2006A', }} onPress={() => cancelShift(shift.id)}>
-                                                    <Text style={{ ...styles.text, color: '#E2006A', }}>Cancel</Text>
-                                                </Pressable>) :
+                                                <Pressable style={{ ...styles.button, borderColor: '#E2006A', }} onPress={() => { cancelShift(shift.id); setloading(shift.id) }}>
+                                                    {(shift.id != loading) ? (<Text style={{ ...styles.text, color: '#E2006A', }}>Cancel</Text>) : (<View style={{ marginHorizontal: 10 }}>
+                                                        <ActivityIndicator size="small" color="#E2006A" />
+                                                    </View>)}
+                                                </Pressable> :
                                                 ((shift.startTime < start1 || shift.notPossible) ? <Pressable disabled style={{ ...styles.button, borderColor: '#A4B8D3' }} onPress={() => bookShift(shift.id)}>
                                                     <Text style={{ ...styles.text, color: '#A4B8D3', }} >Book</Text>
-                                                </Pressable> : <Pressable style={{ ...styles.button, borderColor: '#16A64D' }} onPress={() => bookShift(shift.id)}>
-                                                    <Text style={{ ...styles.text, color: '#16A64D', }} >Book</Text>
+                                                </Pressable> : <Pressable style={{ ...styles.button, borderColor: '#16A64D' }} onPress={() => { bookShift(shift.id); setloading(shift.id) }}>
+                                                    {(shift.id != loading) ? (<Text style={{ ...styles.text, color: '#16A64D', }} >Book</Text>) : (<View style={{ marginHorizontal: 8 }}>
+                                                        <ActivityIndicator size="small" color="#16A64D" />
+                                                    </View>)}
                                                 </Pressable>)}
                                         </View>
                                     )
