@@ -1,7 +1,7 @@
 import Hapi from 'hapi';
-
+import IP_ADDRESS from '../app/IP';
 const server = new Hapi.Server({
-  host: '192.168.1.4',
+  host: IP_ADDRESS,
   port: '8082',
   routes: {
     cors: { origin: ['*'] },

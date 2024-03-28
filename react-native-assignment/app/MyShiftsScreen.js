@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Dropdown } from 'react-native-element-dropdown';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import IP_ADDRESS from './IP';
 export default function AllShiftsScreen({ shifts, setShifts }) {
 
     const [allshifts, setAllShifts] = useState();
@@ -26,7 +27,7 @@ export default function AllShiftsScreen({ shifts, setShifts }) {
     const cancelShift = (id) => {
         console.log(id);
 
-        axios.get(`http://192.168.1.4:8082/shifts/${id}/cancel`).then(response => response.data
+        axios.get(`http://${IP_ADDRESS}:8082/shifts/${id}/cancel`).then(response => response.data
         )
             .then(data => {
                 setShifts(shifts.map((shift) => {
